@@ -39,7 +39,7 @@ describe('Integration: API Workflow', () => {
       expect(results.length).toBeGreaterThan(0);
 
       const unixauto = results.find(c =>
-        c.name.toUpperCase().includes('UNIX AUTO SYSTEMS') && c.statusLabel === 'Funcțiune'
+        c.name.toUpperCase().includes('UNIX AUTO') && c.statusLabel === 'Funcțiune'
       );
       expect(unixauto).toBeDefined();
       expect(unixauto.cui.toString()).toBe(UNIX_AUTO_CIF);
