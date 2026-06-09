@@ -44,4 +44,4 @@ Installed via npm:
 
 - All `.md` files contain dynamic schemas that may change over time
 - Check peviitor_core README.md for latest model definitions
-- Full workflow: check count → validate company (ANAF+Peviitor) → scrape EPAM → transform (fix locations) → upsert → log summary
+- Full workflow: check count → validate company (ANAF+Peviitor) → scrape UNIX AUTO → transform (fix locations) → upsert → log summary

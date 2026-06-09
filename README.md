@@ -1,20 +1,20 @@
-# job_seeker_ro_spider — EPAM Careers Romania Scraper
+# job_seeker_ro_spider — UNIX AUTO Careers Romania Scraper
 
-[![WebScraper EPAM to Peviitor](https://github.com/sebiboga/epam-systems-international-srl-nodejs-scraper/actions/workflows/scrape.yml/badge.svg)](https://github.com/sebiboga/epam-systems-international-srl-nodejs-scraper/actions/workflows/scrape.yml)
-[![Automation Tests](https://github.com/sebiboga/epam-systems-international-srl-nodejs-scraper/actions/workflows/test.yml/badge.svg)](https://github.com/sebiboga/epam-systems-international-srl-nodejs-scraper/actions/workflows/test.yml)
+[![WebScraper UNIX AUTO to Peviitor](https://github.com/sebiboga/unix-auto-srl-nodejs-scraper/actions/workflows/scrape.yml/badge.svg)](https://github.com/sebiboga/unix-auto-srl-nodejs-scraper/actions/workflows/scrape.yml)
+[![Automation Tests](https://github.com/sebiboga/unix-auto-srl-nodejs-scraper/actions/workflows/test.yml/badge.svg)](https://github.com/sebiboga/unix-auto-srl-nodejs-scraper/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![JavaScript](https://img.shields.io/badge/javascript-ESM-F7DF1E?logo=javascript&logoColor=black)](https://ecma-international.org/)
 [![Node.js](https://img.shields.io/badge/node-24-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 
-**job_seeker_ro_spider** — un scraper pentru job-urile EPAM Systems din România. Extrage anunțurile de pe [EPAM Careers Romania](https://careers.epam.com/en/jobs/romania) și le publică în [peviitor.ro](https://peviitor.ro) prin API-ul SOLR.
+**job_seeker_ro_spider** — un scraper pentru job-urile UNIX AUTO din România. Extrage anunțurile de pe [UNIX AUTO Careers Romania](https://careers.unixauto.ro/en/jobs/romania) și le publică în [peviitor.ro](https://peviitor.ro) prin API-ul SOLR.
 
 ## Overview
 
-Proiectul automatizează colectarea zilnică a job-urilor EPAM din România, menținând board-ul peviitor.ro la zi cu cele mai recente oportunități de carieră.
+Proiectul automatizează colectarea zilnică a job-urilor UNIX AUTO din România, menținând board-ul peviitor.ro la zi cu cele mai recente oportunități de carieră.
 
 ## Features
 
-- Extrage job-uri din API-ul public EPAM Careers Romania
+- Extrage job-uri din API-ul public UNIX AUTO Careers Romania
 - Validează compania via ANAF (CUI, status activ/inactiv, adresă completă)
 - Cross-validează cu Peviitor API
 - Stochează în SOLR (job core + company core)
@@ -35,7 +35,7 @@ Proiectul automatizează colectarea zilnică a job-urilor EPAM din România, men
 ├── tests/             # Test suite
 │   ├── unit/          # 56 tests (mocked APIs)
 │   ├── integration/   # 16 tests (ANAF + SOLR live, Peviitor skipped)
-│   └── e2e/           # 13 tests (full pipeline, real EPAM API)
+│   └── e2e/           # 13 tests (full pipeline, real UNIX AUTO API)
 ├── .github/workflows/
 │   ├── scrape.yml     # Daily scraping at 6 AM UTC
 │   └── test.yml       # Automation Tests on push/PR
@@ -93,14 +93,14 @@ npm run test:e2e
 
 The `scrape.yml` workflow runs daily at 6 AM UTC via GitHub Actions. It:
 1. Validates company data via ANAF
-2. Scrapes current job listings from EPAM Careers
+2. Scrapes current job listings from UNIX AUTO Careers
 3. Updates Solr with new/removed jobs
 4. Uploads job data as artifacts
 
 ### Test Automation
 
 The `test.yml` workflow runs on every push and pull request. It:
-1. Ensures EPAM exists in the company core
+1. Ensures UNIX AUTO exists in the company core
 2. Runs unit, integration, and E2E tests
 3. Validates data integrity in Solr
 
@@ -124,7 +124,7 @@ This project is managed by [ASOCIATIA OPORTUNITATI SI CARIERE](https://oportunit
 
 ## Robots.txt Policy
 
-Acest scraper respectă regulile din [robots.txt](https://careers.epam.com/robots.txt) al EPAM Careers. Pentru analiza completă, vezi [ROBOTS.md](ROBOTS.md).
+Acest scraper respectă regulile din [robots.txt](https://careers.unixauto.ro/robots.txt) al UNIX AUTO Careers. Pentru analiza completă, vezi [ROBOTS.md](ROBOTS.md).
 
 **Puncte cheie:**
 - API-ul `/api/*` este `Disallow` în robots.txt — scraper-ul îl folosește, dar cu rate limiting și un singur User-Agent identificabil (`job_seeker_ro_spider`)
@@ -134,4 +134,4 @@ Acest scraper respectă regulile din [robots.txt](https://careers.epam.com/robot
 
 ## Disclaimer
 
-This scraper is designed for educational purposes and legitimate job data aggregation for the Romanian job market. Please respect EPAM's Terms of Service and robots.txt when using this scraper.
+This scraper is designed for educational purposes and legitimate job data aggregation for the Romanian job market. Please respect UNIX AUTO's Terms of Service and robots.txt when using this scraper.

@@ -1,4 +1,4 @@
-# Contributing to EPAM Job Scraper
+# Contributing to UNIX AUTO Job Scraper
 
 Thank you for your interest in contributing!
 
@@ -14,7 +14,7 @@ Thank you for your interest in contributing!
 
 ```bash
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/epam-systems-international-srl-nodejs-scraper.git
+git clone https://github.com/YOUR_USERNAME/unix-auto-srl-nodejs-scraper.git
 
 # Install dependencies
 npm install

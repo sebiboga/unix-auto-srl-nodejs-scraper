@@ -1,4 +1,4 @@
-name: WebScraper EPAM to Peviitor
+name: WebScraper UNIX AUTO to Peviitor
 
 on:
   schedule:

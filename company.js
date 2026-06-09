@@ -18,10 +18,10 @@ import { getCompanyFromANAF } from "./src/anaf.js";
 // Peviitor API base URL for company validation
 const Peviitor_API_URL = "https://api.peviitor.ro/v1/company/";
 
-const COMPANY_CIF = "33159615";
+const COMPANY_CIF = "10542416";
 
 // Company brand name (used for searching in ANAF)
-const COMPANY_BRAND = "EPAM";
+const COMPANY_BRAND = "UNIX AUTO";
 
 /**
  * Returns the company brand name

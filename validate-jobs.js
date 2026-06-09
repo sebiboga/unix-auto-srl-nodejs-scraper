@@ -180,8 +180,8 @@ Usage:
   node validate-jobs.js --file <file.json>       - Check URLs from JSON file
 
 Examples:
-  node validate-jobs.js 33159615                 - Validate EPAM jobs
-  node validate-jobs.js --url "https://careers.epam.com/en/vacancy/123_test"
+  node validate-jobs.js 10542416                 - Validate UNIX AUTO jobs
+  node validate-jobs.js --url "https://careers.unixauto.ro/en/vacancy/123_test"
   node validate-jobs.js --urls "url1" "url2" "url3"
   node validate-jobs.js --file jobs.json
 `;

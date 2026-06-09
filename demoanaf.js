@@ -16,7 +16,7 @@ import { getCompanyFromANAF, searchCompany } from "./src/anaf.js";
 const args = process.argv.slice(2);
 
 if (args[0] === "search") {
-  const brand = args[1] || "EPAM";
+  const brand = args[1] || "UNIX AUTO";
   console.log(`=== Searching for: ${brand} ===\n`);
 
   searchCompany(brand)
@@ -31,7 +31,7 @@ if (args[0] === "search") {
       process.exit(1);
     });
 } else {
-  const cif = args[0] || "33159615";
+  const cif = args[0] || "10542416";
   console.log(`=== Testing ANAF API for CIF: ${cif} ===\n`);
 
   getCompanyFromANAF(cif)

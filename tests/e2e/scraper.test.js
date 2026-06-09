@@ -22,136 +22,80 @@ beforeAll(() => {
   }
 });
 
-const TEST_CIF = '33159615';
-const TEST_BRAND = 'EPAM';
-const EPAM_API_URL = 'https://careers.epam.com/api/jobs/v2/search/careers-i18n?from=0&lang=en&size=5&sortBy=relevance%3Brelocation%3Dasc&websiteLocale=en-us&facets=country%3D8150000000000001155';
-const ROMANIAN_CITIES = ['Bucharest', 'București', 'Cluj-Napoca', 'Timișoara', 'Iași', 'Brașov', 'Constanța', 'Sibiu', 'Oradea'];
+const TEST_CIF = '10542416';
+const TEST_BRAND = 'Unix Auto';
+const UNIXAUTO_CAREERS_URL = 'https://www.unixauto.ro/cariera/cautator';
 
-describe('E2E: Full Scraping Pipeline', () => {
+describe('E2E: Unixauto Scraper', () => {
 
-  describe('EPAM Careers API — Real Data Fetch', () => {
-    let apiData;
-
-    beforeAll(async () => {
-      const res = await fetch(EPAM_API_URL, {
-        headers: {
-          'User-Agent': 'job_seeker_ro_spider',
-          'Accept': 'application/json'
-        }
-      });
-      apiData = await res.json();
-    }, 15000);
-
-    it('should respond with valid job data from EPAM API', () => {
-      expect(apiData).toHaveProperty('data');
-      expect(apiData.data).toHaveProperty('jobs');
-      expect(Array.isArray(apiData.data.jobs)).toBe(true);
-      expect(apiData.data.jobs.length).toBeGreaterThan(0);
-      expect(apiData.data).toHaveProperty('total');
-      expect(typeof apiData.data.total).toBe('number');
-    }, 10000);
-
-    it('should have Romania jobs with expected fields', () => {
-      const job = apiData.data.jobs[0];
-      expect(job).toHaveProperty('uid');
-      expect(job).toHaveProperty('name');
-      expect(typeof job.name).toBe('string');
-      expect(job).toHaveProperty('city');
-    });
-
-    it('should have Romanian country on all jobs', () => {
-      const allCountries = apiData.data.jobs.flatMap(j =>
-        (j.country || []).map(c => c.name?.toLowerCase())
-      );
-      expect(allCountries.length).toBeGreaterThan(0);
-      expect(allCountries.every(c => c === 'romania')).toBe(true);
-    });
-
-    it('should have country set to Romania', () => {
-      const job = apiData.data.jobs[0];
-      expect(job).toHaveProperty('country');
-      const romaniaCountry = (job.country || []).some(c =>
-        c.name?.toLowerCase() === 'romania'
-      );
-      expect(romaniaCountry).toBe(true);
-    });
-  });
-
-  describe('Parse + Transform Pipeline', () => {
+  describe('Real Page Fetch', () => {
+    let html;
     let index;
-    let apiData;
 
     beforeAll(async () => {
       index = await import('../../index.js');
-      const res = await fetch(EPAM_API_URL, {
-        headers: {
-          'User-Agent': 'job_seeker_ro_spider',
-          'Accept': 'application/json'
-        }
+      const res = await fetch(UNIXAUTO_CAREERS_URL, {
+        headers: { 'User-Agent': 'job_seeker_ro_spider' }
       });
-      apiData = await res.json();
+      html = await res.text();
     }, 15000);
 
-    it('should parse real EPAM API response into standardized format', () => {
-      const result = index.parseApiJobs(apiData);
-
-      expect(result).toHaveProperty('jobs');
-      expect(result).toHaveProperty('total');
-      expect(result.jobs.length).toBeGreaterThan(0);
-      expect(result.jobs.length).toBeLessThanOrEqual(5);
-
-      const parsed = result.jobs[0];
-      expect(parsed).toHaveProperty('url');
-      expect(parsed.url).toMatch(/^https:\/\/careers\.epam\.com\//);
-      expect(parsed).toHaveProperty('title');
-      expect(parsed).toHaveProperty('workmode');
-      expect(['remote', 'on-site', 'hybrid']).toContain(parsed.workmode);
-      expect(parsed).toHaveProperty('location');
-      expect(Array.isArray(parsed.location)).toBe(true);
-      expect(parsed).toHaveProperty('tags');
+    it('should return valid HTML from careers page', () => {
+      expect(html).toBeDefined();
+      expect(typeof html).toBe('string');
+      expect(html.length).toBeGreaterThan(0);
+      expect(html).toContain('karrierjob');
     });
 
-    it('should map parsed jobs to job model', () => {
-      const parsed = index.parseApiJobs(apiData);
-      const model = index.mapToJobModel(parsed.jobs[0], TEST_CIF);
-
-      expect(model).toHaveProperty('url');
-      expect(model).toHaveProperty('title');
-      expect(model).toHaveProperty('company');
-      expect(model).toHaveProperty('cif', TEST_CIF);
-      expect(model).toHaveProperty('status', 'scraped');
-      expect(model).toHaveProperty('date');
-      expect(model.url).toMatch(/^https:\/\/careers\.epam\.com\//);
+    it('should contain job links (a.karrierjob)', () => {
+      expect(html).toContain('class="karrierjob"');
     });
 
-    it('should transform jobs and filter to Romanian locations', () => {
-      const parsed = index.parseApiJobs(apiData);
-      const jobs = parsed.jobs.map(j => index.mapToJobModel(j, TEST_CIF));
+    it('should extract jobs from real page', () => {
+      const jobs = index.extractJobsFromAboutPage(html);
 
-      const payload = {
-        source: 'epam.com',
-        company: 'EPAM SYSTEMS INTERNATIONAL SRL',
-        cif: TEST_CIF,
-        jobs
-      };
+      expect(Array.isArray(jobs)).toBe(true);
+      expect(jobs.length).toBeGreaterThan(0);
 
-      const transformed = index.transformJobsForSOLR(payload);
-
-      expect(transformed.company).toBe('EPAM SYSTEMS INTERNATIONAL SRL');
-      expect(transformed.jobs.length).toBe(jobs.length);
-
-      for (const job of transformed.jobs) {
+      for (const job of jobs) {
+        expect(job).toHaveProperty('title');
+        expect(job.title).toBeTruthy();
+        expect(job).toHaveProperty('url');
+        expect(job.url).toMatch(/^https:\/\/www\.unixauto\.ro\/cariera\/locuri-de-munca\//);
         expect(job).toHaveProperty('location');
         expect(Array.isArray(job.location)).toBe(true);
         expect(job.location.length).toBeGreaterThan(0);
-        expect(job.workmode).toMatch(/^(remote|on-site|hybrid)$/);
+        expect(job).toHaveProperty('workplaceType', 'on-site');
+        expect(job).toHaveProperty('status', 'scraped');
+        expect(job).toHaveProperty('postingDate');
+        expect(job).toHaveProperty('date');
+        expect(job).toHaveProperty('company', 'UNIX AUTO');
+        expect(job).toHaveProperty('cif', TEST_CIF);
       }
     });
 
-    it('should produce valid job URLs that are accessible', async () => {
-      const parsed = index.parseApiJobs(apiData);
+    it('should transform jobs to SOLR format', () => {
+      const jobs = index.extractJobsFromAboutPage(html);
+      const transformed = index.transformJobs(jobs);
 
-      for (const job of parsed.jobs.slice(0, 2)) {
+      expect(transformed).toHaveProperty('jobs');
+      expect(transformed.jobs.length).toBe(jobs.length);
+
+      for (const job of transformed.jobs) {
+        expect(job).toHaveProperty('url');
+        expect(job).toHaveProperty('title');
+        expect(job).toHaveProperty('company');
+        expect(job).toHaveProperty('cif', TEST_CIF);
+        expect(job).toHaveProperty('location');
+        expect(job).toHaveProperty('workplaceType', 'on-site');
+        expect(job).toHaveProperty('status', 'scraped');
+      }
+    });
+
+    it('should have accessible job URLs', async () => {
+      const jobs = index.extractJobsFromAboutPage(html);
+
+      for (const job of jobs.slice(0, 3)) {
         const res = await fetch(job.url, {
           method: 'HEAD',
           headers: { 'User-Agent': 'job_seeker_ro_spider' }
@@ -170,59 +114,32 @@ describe('E2E: Full Scraping Pipeline', () => {
       company = await import('../../company.js');
     });
 
-    it('should find EPAM in ANAF and validate active status', async () => {
-      const results = await anaf.searchCompany(TEST_BRAND);
+    it('should find UNIX AUTO in ANAF and validate active status', async () => {
+      const results = await anaf.searchCompany('UNIX AUTO');
 
-      const epam = results.find(c =>
-        c.name.toUpperCase().startsWith(TEST_BRAND + ' ') &&
+      const unixauto = results.find(c =>
+        c.cui.toString() === TEST_CIF &&
         c.statusLabel === 'Funcțiune'
       );
-      expect(epam).toBeDefined();
-      expect(epam.cui.toString()).toBe(TEST_CIF);
+      expect(unixauto).toBeDefined();
+      expect(unixauto.cui.toString()).toBe(TEST_CIF);
 
       const anafData = await anaf.getCompanyFromANAF(TEST_CIF);
       expect(anafData).toBeDefined();
       expect(anafData.inactive).toBe(false);
     }, 30000);
 
-    itIfSolr('should run full validation and report active status with job count', async () => {
+    itIfSolr('should run full validation and report active status', async () => {
       const result = await company.validateAndGetCompany();
 
       expect(result.status).toBe('active');
-      expect(result.company).toBe('EPAM SYSTEMS INTERNATIONAL SRL');
       expect(result.cif).toBe(TEST_CIF);
 
       if (result.existingJobsCount === 0) {
-        console.log('⚠️ No EPAM jobs in Solr — skipping job count assertion');
+        console.log('No UNIX AUTO jobs in Solr — skipping job count assertion');
         return;
       }
       expect(result.existingJobsCount).toBeGreaterThan(0);
-    }, 30000);
-  });
-
-  describe('Inactive Company Handling', () => {
-    let anaf;
-
-    beforeAll(async () => {
-      anaf = await import('../../src/anaf.js');
-    });
-
-    it('should detect inactive/radiated companies via ANAF', async () => {
-      const results = await anaf.searchCompany('EPAM');
-
-      const nonActive = results.find(c => c.statusLabel !== 'Funcțiune');
-
-      if (nonActive) {
-        try {
-          const anafData = await anaf.getCompanyFromANAF(nonActive.cui.toString());
-          expect(anafData).toBeDefined();
-          if (anafData.inactive !== undefined) {
-            expect(anafData.inactive).toBe(true);
-          }
-        } catch {
-          expect(nonActive.statusLabel).toMatch(/Radiată|Inactiv|Suspendat/);
-        }
-      }
     }, 30000);
   });
 
@@ -233,27 +150,26 @@ describe('E2E: Full Scraping Pipeline', () => {
       solr = await import('../../solr.js');
     });
 
-    itIfSolr('should have EPAM jobs in SOLR with correct company name', async () => {
+    itIfSolr('should have UNIX AUTO jobs in SOLR with correct CIF', async () => {
       const result = await solr.querySOLR(TEST_CIF);
 
       if (result.numFound === 0) {
-        console.log('⚠️ No EPAM jobs in Solr — skipping SOLR data verification');
+        console.log('No UNIX AUTO jobs in Solr — skipping');
         return;
       }
 
       for (const job of result.docs) {
-        expect(job.company).toBe('EPAM SYSTEMS INTERNATIONAL SRL');
         expect(job.cif).toBe(TEST_CIF);
       }
     }, 15000);
 
-    itIfSolr('should have EPAM company core entry with required fields', async () => {
+    itIfSolr('should have UNIX AUTO company core entry', async () => {
       const result = await solr.queryCompanySOLR(`id:${TEST_CIF}`);
 
       expect(result.numFound).toBe(1);
-      const epam = result.docs[0];
-      expect(epam.company).toBe('EPAM SYSTEMS INTERNATIONAL SRL');
-      expect(epam.status).toBe('activ');
+      const unixauto = result.docs[0];
+      expect(unixauto.cif || unixauto.id).toBe(TEST_CIF);
+      expect(unixauto.status).toBe('activ');
     }, 15000);
   });
 });

@@ -1,8 +1,8 @@
 /**
- * EPAM Job Validator - Check and remove expired jobs
+ * UNIX AUTO Job Validator - Check and remove expired jobs
  * 
- * Validates all EPAM jobs from peviitor API and deletes expired (404) ones from SOLR.
- * Run: node tests/validate-epam-jobs.js
+ * Validates all UNIX AUTO jobs from peviitor API and deletes expired (404) ones from SOLR.
+ * Run: node tests/validate-unixauto-jobs.js
  */
 
 import fetch from "node-fetch";
@@ -10,10 +10,10 @@ import fetch from "node-fetch";
 // SOLR configuration
 const SOLR_URL = "https://solr.peviitor.ro/solr/job/update";
 const SOLR_AUTH = process.env.SOLR_AUTH;
-const COMPANY_NAME = "EPAM SYSTEMS INTERNATIONAL SRL";
+const COMPANY_NAME = "UNIX AUTO SRL SRL";
 
 /**
- * Get all jobs for EPAM from peviitor API
+ * Get all jobs for UNIX AUTO from peviitor API
  */
 async function getJobs() {
   const jobs = [];
@@ -103,7 +103,7 @@ async function main(args) {
   const dryRun = args.includes("--dry-run") || !args.includes("--delete");
   
   console.log("=".repeat(50));
-  console.log("EPAM Job Validator");
+  console.log("UNIX AUTO Job Validator");
   console.log("=".repeat(50));
   console.log(`Mode: ${dryRun ? "DRY RUN (no changes)" : "LIVE (will delete expired)"}\n`);
   

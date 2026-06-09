@@ -1,6 +1,6 @@
-# Robots.txt Analysis — EPAM Careers
+# Robots.txt Analysis — UNIX AUTO Careers
 
-Sursa: https://careers.epam.com/robots.txt
+Sursa: https://careers.unixauto.ro/robots.txt
 
 ## Reguli
 

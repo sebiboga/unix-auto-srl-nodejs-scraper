@@ -1,220 +1,244 @@
 import { jest } from '@jest/globals';
 
-describe('index.js Component Tests', () => {
+const mockFetch = jest.fn();
+
+jest.unstable_mockModule('node-fetch', () => ({
+  default: mockFetch
+}));
+
+function mockHtmlResponse(jobs) {
+  const jobHtml = jobs.map(j => `
+    <a href="${j.href}" class="karrierjob">
+      <h3 class="karrierjob__h3">${j.title}</h3>
+      <div class="karrierjob__cimek karrierjob__cimek-grid">
+        <p class="karrierjob__p karrierjob__p-no-break karrierjob__p-link">${j.location}</p>
+      </div>
+    </a>
+  `).join('\n');
+
+  return {
+    ok: true,
+    text: async () => `<html><body>${jobHtml}</body></html>`
+  };
+}
+
+const MOCK_JOBS = [
+  { href: '/cariera/locuri-de-munca/123/456', title: 'Mecanic Auto', location: 'Bucuresti, 050156 Sos. Viilor nr. 14 Sector 5' },
+  { href: '/cariera/locuri-de-munca/124/457', title: 'Electrician Auto', location: 'Cluj-Napoca, Str. Dorobantilor 98-100' },
+  { href: '/cariera/locuri-de-munca/125/458', title: 'Tinichigiu Auto', location: 'Timisoara, Calea Urseni 30' }
+];
+
+describe('index.js — Unixauto scraper', () => {
   let index;
 
   beforeAll(async () => {
     index = await import('../../index.js');
   });
 
-  describe('transformJobsForSOLR', () => {
-    it('should filter locations to only Romanian cities', () => {
-      const payload = {
-        jobs: [
-          { url: 'https://test.com/1', title: 'Job 1', location: ['România'] },
-          { url: 'https://test.com/2', title: 'Job 2', location: ['Bucharest'] },
-          { url: 'https://test.com/3', title: 'Job 3', location: ['Bulgaria'] },
-          { url: 'https://test.com/4', title: 'Job 4', location: ['Cluj-Napoca'] },
-          { url: 'https://test.com/5', title: 'Job 5', location: [] }
-        ]
-      };
+  afterEach(() => {
+    mockFetch.mockReset();
+  });
 
-      const result = index.transformJobsForSOLR(payload);
+  describe('extractJobsFromAboutPage', () => {
+    it('should extract all jobs from HTML', () => {
+      const html = `<html><body>
+        <a href="/cariera/locuri-de-munca/123/456" class="karrierjob">
+          <h3 class="karrierjob__h3">Mecanic Auto</h3>
+          <div class="karrierjob__cimek karrierjob__cimek-grid">
+            <p class="karrierjob__p karrierjob__p-no-break karrierjob__p-link">Bucuresti, 050156 Sos. Viilor nr. 14 Sector 5</p>
+          </div>
+        </a>
+        <a href="/cariera/locuri-de-munca/124/457" class="karrierjob">
+          <h3 class="karrierjob__h3">Electrician Auto</h3>
+          <div class="karrierjob__cimek karrierjob__cimek-grid">
+            <p class="karrierjob__p karrierjob__p-no-break karrierjob__p-link">Cluj-Napoca, Str. Dorobantilor 98-100</p>
+          </div>
+        </a>
+      </body></html>`;
 
-      expect(result.jobs[0].location).toEqual(['România']);
-      expect(result.jobs[1].location).toEqual(['Bucharest']);
-      expect(result.jobs[2].location).toEqual(['România']);
-      expect(result.jobs[3].location).toEqual(['Cluj-Napoca']);
-      expect(result.jobs[4].location).toEqual(['România']);
+      const result = index.extractJobsFromAboutPage(html);
+
+      expect(result).toHaveLength(2);
+      expect(result[0].title).toBe('Mecanic Auto');
+      expect(result[0].location).toEqual(['Bucuresti']);
+      expect(result[0].url).toBe('https://www.unixauto.ro/cariera/locuri-de-munca/123/456');
+      expect(result[1].title).toBe('Electrician Auto');
+      expect(result[1].location).toEqual(['Cluj-Napoca']);
     });
 
-    it('should keep company uppercase', () => {
-      const payload = {
-        source: 'epam.com',
-        company: 'epam systems international srl',
-        cif: '33159615',
-        jobs: [
-          { url: 'https://test.com/1', title: 'Job 1', company: 'epam systems', cif: '33159615' }
-        ]
-      };
+    it('should extract city from first location paragraph', () => {
+      const html = `<html><body>
+        <a href="/cariera/locuri-de-munca/99/88" class="karrierjob">
+          <h3 class="karrierjob__h3">Vanzator Piese</h3>
+          <div class="karrierjob__cimek karrierjob__cimek-grid">
+            <p class="karrierjob__p karrierjob__p-no-break karrierjob__p-link">Timisoara, Calea Urseni 30</p>
+            <p class="karrierjob__p karrierjob__p-no-break karrierjob__p-link">Arad, Strada Libertatii 10</p>
+          </div>
+        </a>
+      </body></html>`;
 
-      const result = index.transformJobsForSOLR(payload);
+      const result = index.extractJobsFromAboutPage(html);
 
-      expect(result.company).toBe('EPAM SYSTEMS INTERNATIONAL SRL');
+      expect(result).toHaveLength(1);
+      expect(result[0].location).toEqual(['Timisoara']);
     });
 
-    it('should normalize workmode values', () => {
-      const payload = {
-        jobs: [
-          { url: 'https://test.com/1', title: 'Job 1', workmode: 'Remote' },
-          { url: 'https://test.com/2', title: 'Job 2', workmode: 'ON-SITE' },
-          { url: 'https://test.com/3', title: 'Job 3', workmode: 'Hybrid' },
-          { url: 'https://test.com/4', title: 'Job 4', workmode: 'hybrid' }
-        ]
-      };
+    it('should use România fallback when no location text', () => {
+      const html = `<html><body>
+        <a href="/cariera/locuri-de-munca/1/1" class="karrierjob">
+          <h3 class="karrierjob__h3">Job Fara Adresa</h3>
+          <div class="karrierjob__cimek karrierjob__cimek-grid">
+            <p class="karrierjob__p karrierjob__p-no-break karrierjob__p-link"></p>
+          </div>
+        </a>
+      </body></html>`;
 
-      const result = index.transformJobsForSOLR(payload);
+      const result = index.extractJobsFromAboutPage(html);
 
-      expect(result.jobs[0].workmode).toBe('remote');
-      expect(result.jobs[1].workmode).toBe('on-site');
-      expect(result.jobs[2].workmode).toBe('hybrid');
-      expect(result.jobs[3].workmode).toBe('hybrid');
+      expect(result).toHaveLength(1);
+      expect(result[0].location).toEqual(['România']);
     });
 
-    it('should handle empty jobs array', () => {
-      const result = index.transformJobsForSOLR({ jobs: [] });
-      expect(result.jobs).toEqual([]);
+    it('should set workplaceType to on-site for all jobs', () => {
+      const html = `<html><body>
+        <a href="/cariera/locuri-de-munca/1/1" class="karrierjob">
+          <h3 class="karrierjob__h3">Test Job</h3>
+          <div class="karrierjob__cimek karrierjob__cimek-grid">
+            <p class="karrierjob__p karrierjob__p-no-break karrierjob__p-link">Iasi, Strada Mare 1</p>
+          </div>
+        </a>
+      </body></html>`;
+
+      const result = index.extractJobsFromAboutPage(html);
+
+      expect(result[0].workplaceType).toBe('on-site');
+    });
+
+    it('should set postingDate to today', () => {
+      const html = `<html><body>
+        <a href="/cariera/locuri-de-munca/1/1" class="karrierjob">
+          <h3 class="karrierjob__h3">Test</h3>
+          <div class="karrierjob__cimek karrierjob__cimek-grid">
+            <p class="karrierjob__p karrierjob__p-no-break karrierjob__p-link">Brasov, Strada 1</p>
+          </div>
+        </a>
+      </body></html>`;
+
+      const result = index.extractJobsFromAboutPage(html);
+      const today = new Date().toISOString().split('T')[0];
+
+      expect(result[0].postingDate).toBe(today);
+    });
+
+    it('should set status to scraped', () => {
+      const html = `<html><body>
+        <a href="/cariera/locuri-de-munca/1/1" class="karrierjob">
+          <h3 class="karrierjob__h3">Test</h3>
+          <div class="karrierjob__cimek karrierjob__cimek-grid">
+            <p class="karrierjob__p karrierjob__p-no-break karrierjob__p-link">Sibiu, Strada 1</p>
+          </div>
+        </a>
+      </body></html>`;
+
+      const result = index.extractJobsFromAboutPage(html);
+
+      expect(result[0].status).toBe('scraped');
+    });
+
+    it('should return empty array when no job links exist', () => {
+      const html = '<html><body><p>No jobs here</p></body></html>';
+
+      const result = index.extractJobsFromAboutPage(html);
+
+      expect(result).toEqual([]);
     });
   });
 
-  describe('mapToJobModel', () => {
-    it('should map raw job to job model format', () => {
-      const rawJob = {
-        url: 'https://careers.epam.com/job/123',
-        title: 'Senior Developer',
-        location: ['Bucharest'],
-        tags: ['Java', 'Spring'],
-        workmode: 'hybrid'
-      };
+  describe('scrapeJobs', () => {
+    it('should fetch careers page and return parsed jobs', async () => {
+      mockFetch.mockResolvedValueOnce(mockHtmlResponse(MOCK_JOBS));
 
-      const COMPANY_NAME = 'EPAM SYSTEMS INTERNATIONAL SRL';
-      const COMPANY_CIF = '33159615';
+      const result = await index.scrapeJobs();
 
-      const result = index.mapToJobModel(rawJob, COMPANY_CIF, COMPANY_NAME);
-
-      expect(result.url).toBe(rawJob.url);
-      expect(result.title).toBe(rawJob.title);
-      expect(result.company).toBe(COMPANY_NAME);
-      expect(result.cif).toBe(COMPANY_CIF);
-      expect(result.location).toEqual(rawJob.location);
-      expect(result.tags).toEqual(rawJob.tags);
-      expect(result.workmode).toBe(rawJob.workmode);
-      expect(result.status).toBe('scraped');
-      expect(result.date).toBeDefined();
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://www.unixauto.ro/cariera/cautator',
+        expect.objectContaining({ headers: { "User-Agent": "job_seeker_ro_spider" } })
+      );
+      expect(result).toHaveLength(3);
+      expect(result[0].title).toBe('Mecanic Auto');
+      expect(result[1].title).toBe('Electrician Auto');
+      expect(result[2].title).toBe('Tinichigiu Auto');
     });
 
-    it('should remove undefined fields', () => {
-      const rawJob = {
-        url: 'https://test.com/1',
-        title: 'Job 1'
-      };
+    it('should throw when fetch fails', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 404 });
 
-      const result = index.mapToJobModel(rawJob, '33159615');
-
-      expect(result.location).toBeUndefined();
-      expect(result.tags).toBeUndefined();
-      expect(result.workmode).toBeUndefined();
-    });
-
-    it('should handle missing title', () => {
-      const rawJob = { url: 'https://test.com/1' };
-
-      const result = index.mapToJobModel(rawJob, '33159615');
-
-      expect(result.title).toBeUndefined();
-      expect(result.url).toBe('https://test.com/1');
+      await expect(index.scrapeJobs()).rejects.toThrow();
     });
   });
 
-  describe('parseApiJobs', () => {
-    it('should parse EPAM API response format', () => {
-      const apiData = {
-        data: {
-          total: 100,
-          jobs: [
-            {
-              uid: '123',
-              name: 'Senior Developer',
-              city: [{ name: 'Bucharest' }],
-              country: [{ name: 'Romania' }],
-              vacancy_type: 'Hybrid',
-              skills: ['Java', 'Spring']
-            }
-          ]
-        }
-      };
+  describe('transformJobs', () => {
+    it('should wrap jobs in { jobs } object', () => {
+      const jobs = [
+        { url: 'https://www.unixauto.ro/cariera/locuri-de-munca/1/1', title: 'Test' }
+      ];
 
-      const result = index.parseApiJobs(apiData);
+      const result = index.transformJobs(jobs);
 
-      expect(result.jobs).toHaveLength(1);
-      expect(result.jobs[0].title).toBe('Senior Developer');
-      expect(result.jobs[0].location).toEqual(['Bucharest']);
-      expect(result.jobs[0].workmode).toBe('hybrid');
+      expect(result).toEqual({ jobs });
+      expect(result.jobs).toBe(jobs);
     });
 
-    it('should handle empty job list', () => {
-      const apiData = { data: { total: 0, jobs: [] } };
-
-      const result = index.parseApiJobs(apiData);
-
-      expect(result.jobs).toEqual([]);
-    });
-
-    it('should handle missing data field', () => {
-      const result = index.parseApiJobs({});
-
-      expect(result.jobs).toEqual([]);
-    });
-
-    it('should handle multiple cities', () => {
-      const apiData = {
-        data: {
-          total: 1,
-          jobs: [
-            {
-              uid: '123',
-              name: 'Developer',
-              city: [{ name: 'Bucharest' }, { name: 'Cluj-Napoca' }],
-              country: [{ name: 'Romania' }]
-            }
-          ]
-        }
-      };
-
-      const result = index.parseApiJobs(apiData);
-
-      expect(result.jobs[0].location).toEqual(['Bucharest', 'Cluj-Napoca']);
+    it('should handle empty array', () => {
+      const result = index.transformJobs([]);
+      expect(result).toEqual({ jobs: [] });
     });
   });
 
-  describe('URL Generation', () => {
-    it('should use seo.url when available', () => {
-      const apiData = {
-        data: {
-          total: 1,
-          jobs: [
-            {
-              uid: 'blt123',
-              name: 'Test Job',
-              seo: { url: '/en/vacancy/test-job-blt123_en' },
-              city: [{ name: 'Bucharest' }]
-            }
-          ]
-        }
-      };
+  describe('uploadJobsToSolr', () => {
+    const OLD_ENV = process.env;
 
-      const result = index.parseApiJobs(apiData);
-
-      expect(result.jobs[0].url).toBe('https://careers.epam.com/en/vacancy/test-job-blt123_en');
+    beforeEach(() => {
+      process.env = { ...OLD_ENV };
+      delete process.env.SOLR_AUTH;
     });
 
-    it('should fallback to uid-based URL when no seo.url', () => {
-      const apiData = {
-        data: {
-          total: 1,
-          jobs: [
-            {
-              uid: 'blt456',
-              name: 'Test Job',
-              city: [{ name: 'Bucharest' }]
-            }
-          ]
-        }
-      };
+    afterAll(() => {
+      process.env = OLD_ENV;
+    });
 
-      const result = index.parseApiJobs(apiData);
+    it('should skip upload when SOLR_AUTH is not set', async () => {
+      const payload = { jobs: [{ url: 'https://test.com/1', title: 'Test' }] };
 
-      expect(result.jobs[0].url).toBe('https://careers.epam.com/en/vacancy/blt456_en');
+      await index.uploadJobsToSolr(payload);
+
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('should upload to SOLR when SOLR_AUTH is set', async () => {
+      process.env.SOLR_AUTH = 'user:pass';
+      mockFetch.mockResolvedValueOnce({ ok: true });
+
+      const payload = { jobs: [{ url: 'https://test.com/1', title: 'Test' }] };
+
+      await index.uploadJobsToSolr(payload);
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const callUrl = mockFetch.mock.calls[0][0];
+      expect(callUrl).toContain('solr.peviitor.ro');
+      const callOpts = mockFetch.mock.calls[0][1];
+      expect(callOpts.method).toBe('POST');
+      expect(callOpts.headers['Authorization']).toContain('Basic');
+      expect(callOpts.headers['Content-Type']).toBe('application/json');
+    });
+
+    it('should throw on SOLR upload failure', async () => {
+      process.env.SOLR_AUTH = 'user:pass';
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 500, text: async () => 'Error' });
+
+      const payload = { jobs: [{ url: 'https://test.com/1', title: 'Test' }] };
+
+      await expect(index.uploadJobsToSolr(payload)).rejects.toThrow('SOLR upload error: 500');
     });
   });
 });

@@ -1,7 +1,7 @@
 # AGENTS.md — Rules for AI agents
 
 ## Project
-EPAM scraper for peviitor.ro (Node.js, ESM, Jest)
+UNIX AUTO scraper for peviitor.ro (Node.js, ESM, Jest)
 
 ## Critical Rules
 
@@ -29,7 +29,7 @@ npm test
 # Integration tests (ANAF public API, SOLR conditional)
 node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern=integration --testTimeout=60000
 
-# E2E tests (real EPAM API, SOLR conditional)
+# E2E tests (real UNIX AUTO API, SOLR conditional)
 node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern=e2e --testTimeout=60000
 ```
 

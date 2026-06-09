@@ -36,13 +36,13 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" == "schedule" ]; then
             echo "Schedule trigger — running LIVE mode..."
-            node --no-deprecation tests/validate-epam-jobs.js --delete
+            node --no-deprecation tests/validate-unixauto-jobs.js --delete
           elif [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
             echo "Running in DRY RUN mode..."
-            node --no-deprecation tests/validate-epam-jobs.js --dry-run
+            node --no-deprecation tests/validate-unixauto-jobs.js --dry-run
           else
             echo "Running in LIVE mode (will delete expired jobs)..."
-            node --no-deprecation tests/validate-epam-jobs.js --delete
+            node --no-deprecation tests/validate-unixauto-jobs.js --delete
           fi
         env:
           SOLR_AUTH: ${{ secrets.SOLR_AUTH }}
@@ -51,20 +51,20 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Ensure EPAM exists in company core
+      - name: Ensure UNIX AUTO exists in company core
         env:
           SOLR_AUTH: ${{ secrets.SOLR_AUTH }}
         run: |
-          # Check if EPAM exists
+          # Check if UNIX AUTO exists
           EXISTING=$(curl -s --user "${SOLR_AUTH}" \
-            "https://solr.peviitor.ro/solr/company/select?q=id:33159615&rows=1" | jq '.response.numFound')
+            "https://solr.peviitor.ro/solr/company/select?q=id:10542416&rows=1" | jq '.response.numFound')
           
-          echo "EPAM count in company core: $EXISTING"
+          echo "UNIX AUTO count in company core: $EXISTING"
           
           # Add only if not exists
           if [ "$EXISTING" -eq "0" ]; then
-            echo "EPAM not found - adding to company core..."
-            echo '[{"id":"33159615","company":"EPAM SYSTEMS INTERNATIONAL SRL","brand":"EPAM","status":"activ","location":["Bucuresti"],"website":["https://www.epam.com"],"career":["https://careers.epam.com"],"lastScraped":"2026-04-14","scraperFile":"https://raw.githubusercontent.com/sebiboga/epam-systems-international-srl-nodejs-scraper/master/.github/workflows/scrape.yml"}]' > company_data.json
+            echo "UNIX AUTO not found - adding to company core..."
+            echo '[{"id":"10542416","company":"UNIX AUTO SRL","brand":"UNIX AUTO","status":"activ","location":["Bucuresti"],"website":["https://www.unixauto.ro"],"career":["https://careers.unixauto.ro"],"lastScraped":"2026-04-14","scraperFile":"https://raw.githubusercontent.com/sebiboga/unix-auto-srl-nodejs-scraper/master/.github/workflows/scrape.yml"}]' > company_data.json
             
             curl -s --user "${SOLR_AUTH}" \
               "https://solr.peviitor.ro/solr/company/update/json?commit=true" \
@@ -72,19 +72,19 @@ jobs:
               -H "Content-Type: application/json" \
               --data-binary @company_data.json
           else
-            echo "EPAM already exists in company core - no action needed"
+            echo "UNIX AUTO already exists in company core - no action needed"
           fi
           
           # Verify
           FINAL=$(curl -s --user "${SOLR_AUTH}" \
-            "https://solr.peviitor.ro/solr/company/select?q=id:33159615&rows=1" | jq '.response.numFound')
+            "https://solr.peviitor.ro/solr/company/select?q=id:10542416&rows=1" | jq '.response.numFound')
           
-          echo "EPAM count after check: $FINAL"
+          echo "UNIX AUTO count after check: $FINAL"
           
           if [ "$FINAL" -ge "1" ]; then
-            echo "✅ SUCCESS: EPAM is in company core"
+            echo "✅ SUCCESS: UNIX AUTO is in company core"
           else
-            echo "❌ FAILED: EPAM still not in company core"
+            echo "❌ FAILED: UNIX AUTO still not in company core"
             exit 1
           fi
 
