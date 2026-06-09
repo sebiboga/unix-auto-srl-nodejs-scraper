@@ -69,7 +69,7 @@ describe('E2E: Unixauto Scraper', () => {
         expect(job).toHaveProperty('status', 'scraped');
         expect(job).toHaveProperty('postingDate');
         expect(job).toHaveProperty('date');
-        expect(job).toHaveProperty('company', 'UNIX AUTO');
+        expect(job).toHaveProperty('company', 'UNIX AUTO SRL');
         expect(job).toHaveProperty('cif', TEST_CIF);
       }
     });
