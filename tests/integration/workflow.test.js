@@ -57,7 +57,7 @@ describe('Integration: API Workflow', () => {
 
       expect(data).toBeDefined();
       expect(data.cui).toBe(10542416);
-      expect(data.name).toBe('UNIX AUTO SRL SRL');
+      expect(data.name).toBe('UNIX AUTO SRL');
       expect(data).toHaveProperty('address');
       expect(data).toHaveProperty('registrationNumber');
       expect(data).toHaveProperty('caenCode');
@@ -70,7 +70,7 @@ describe('Integration: API Workflow', () => {
     }, 60000);
 
     it('should use cached data when API fails (getCompanyFromANAFWithFallback)', async () => {
-      const cached = { cui: 10542416, name: 'UNIX AUTO SRL SRL' };
+      const cached = { cui: 10542416, name: 'UNIX AUTO SRL' };
 
       const data = await anaf.getCompanyFromANAFWithFallback(UNIX_AUTO_CIF, cached);
 
@@ -111,7 +111,7 @@ describe('Integration: API Workflow', () => {
       expect(result.numFound).toBe(1);
       const unixauto = result.docs[0];
       expect(unixauto.id).toBe(UNIX_AUTO_CIF);
-      expect(unixauto.ropany).toBe('UNIX AUTO SRL SRL');
+      expect(unixauto.company).toBe('UNIX AUTO SRL');
       expect(unixauto.brand).toBe('UNIX AUTO');
       expect(unixauto.status).toBe('activ');
       expect(Array.isArray(unixauto.location)).toBe(true);
@@ -170,7 +170,7 @@ describe('Integration: API Workflow', () => {
       const job = result.docs[0];
       expect(job).toHaveProperty('url');
       expect(job).toHaveProperty('title');
-      expect(job).toHaveProperty('company', 'UNIX AUTO SRL SRL');
+      expect(job).toHaveProperty('company', 'UNIX AUTO SRL');
       expect(job).toHaveProperty('cif', UNIX_AUTO_CIF);
       expect(job).toHaveProperty('status');
       expect(job).toHaveProperty('location');
@@ -221,7 +221,7 @@ describe('Integration: API Workflow', () => {
       expect(unixautoCompany).toBeDefined();
 
       const anafData = await anaf.getCompanyFromANAF(unixautoCompany.cui.toString());
-      expect(anafData.name).toBe('UNIX AUTO SRL SRL');
+      expect(anafData.name).toBe('UNIX AUTO SRL');
       expect(anafData.inactive).toBe(false);
     }, 30000);
 
@@ -232,14 +232,14 @@ describe('Integration: API Workflow', () => {
       const solrResult = await solrObj.queryCompanySOLR(`id:${UNIX_AUTO_CIF}`);
       expect(solrResult.numFound).toBe(1);
       expect(solrResult.docs[0].id).toBe(UNIX_AUTO_CIF);
-      expect(solrResult.docs[0].company).toBe('UNIX AUTO SRL SRL');
+      expect(solrResult.docs[0].company).toBe('UNIX AUTO SRL');
     }, 30000);
 
     itIfSolr('should validate company and query SOLR for existing jobs', async () => {
       const companyResult = await companyModule.validateAndGetCompany();
 
       expect(companyResult.status).toBe('active');
-      expect(companyResult.company).toBe('UNIX AUTO SRL SRL');
+      expect(companyResult.company).toBe('UNIX AUTO SRL');
       expect(companyResult.cif).toBe(UNIX_AUTO_CIF);
 
       if (companyResult.existingJobsCount === 0) {
