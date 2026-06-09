@@ -10,7 +10,7 @@ import fetch from "node-fetch";
 // SOLR configuration
 const SOLR_URL = "https://solr.peviitor.ro/solr/job/update";
 const SOLR_AUTH = process.env.SOLR_AUTH;
-const COMPANY_NAME = "UNIX AUTO SRL SRL";
+const COMPANY_NAME = "UNIX AUTO SRL";
 
 /**
  * Get all jobs for UNIX AUTO from peviitor API
