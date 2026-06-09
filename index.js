@@ -4,7 +4,7 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 
 const COMPANY_CIF = "10542416";
-const COMPANY_NAME = "UNIX AUTO";
+const COMPANY_NAME = "UNIX AUTO SRL";
 const BASE_URL = "https://www.unixauto.ro";
 
 function extractCityFromLocation(text) {
